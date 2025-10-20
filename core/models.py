@@ -5,15 +5,15 @@ from django.contrib.postgres.fields import ArrayField  # Only if using PostgreSQ
 from django.db.models import JSONField
 
 
+
 class Note(models.Model):
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="notes"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notes"
     )
     title = models.CharField(max_length=255)
-    content = models.TextField(blank=True)
-    tags = models.ManyToManyField('Tag', related_name="notes", blank=True)
+    content = models.TextField()
+    tags = models.ManyToManyField("Tag", related_name="notes", blank=True)
+    embedding = JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

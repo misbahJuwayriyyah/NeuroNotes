@@ -18,6 +18,7 @@ from core.utils import extract_text_from_pdf,generate_embedding
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from datetime import datetime
+from core.tasks import generate_note_embedding
 
 
 class NoteViewSet(viewsets.ModelViewSet):
@@ -78,7 +79,12 @@ class NoteViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        note = serializer.save(owner=self.request.user)
+        generate_note_embedding.delay(note.id)  # type:ignore[override]
+
+    def perform_update(self, serializer):
+        note = serializer.save()
+        generate_note_embedding.delay(note.id)   # type:ignore[override]
 
 
 
