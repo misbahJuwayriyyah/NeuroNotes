@@ -18,7 +18,12 @@ from core.utils import extract_text_from_pdf,generate_embedding
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from datetime import datetime
-from core.tasks import generate_note_embedding
+from core.tasks import generate_note_embedding,build_semantic_links
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+
 
 
 class NoteViewSet(viewsets.ModelViewSet):
@@ -80,11 +85,13 @@ class NoteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         note = serializer.save(owner=self.request.user)
-        generate_note_embedding.delay(note.id)  # type:ignore[override]
+        generate_note_embedding.delay(note.id)# type: ignore[call-arg]
+        build_semantic_links.delay()  # type: ignore[call-arg]
 
     def perform_update(self, serializer):
         note = serializer.save()
-        generate_note_embedding.delay(note.id)   # type:ignore[override]
+        generate_note_embedding.delay(note.id)# type: ignore[call-arg]
+        build_semantic_links.delay()# type: ignore[call-arg]
 
 
 
@@ -121,6 +128,58 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
         document.save()
 
+from core.models import SemanticLink, Note, Document
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def related_items(request):
+    """
+    Returns related Notes and Documents for a given item (by type + id).
+    Example: /api/related/?type=note&id=5
+    """
+    item_type = request.query_params.get("type")
+    item_id = request.query_params.get("id")
+
+    if item_type not in ["note", "document"] or not item_id:
+        return Response(
+            {"error": "Missing or invalid query params: type (note/document) and id required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Fetch related semantic links
+    links = SemanticLink.objects.filter(
+        source_type=item_type, source_id=item_id
+    ).order_by("-similarity")
+
+    related = []
+    for link in links:
+        if link.target_type == "note":
+            try:
+                note = Note.objects.get(id=link.target_id)
+                related.append({
+                    "id": note.id, #type: ignore[assignment]
+                    "type": "note",
+                    "title": note.title,
+                    "similarity": round(link.similarity, 3),
+                    "created_at": note.created_at
+                })
+            except Note.DoesNotExist:
+                continue
+        elif link.target_type == "document":
+            try:
+                doc = Document.objects.get(id=link.target_id)
+                related.append({
+                    "id": doc.id, #type: ignore[assignment]
+                    "type": "document",
+                    "title": doc.title,
+                    "similarity": round(link.similarity, 3),
+                    "created_at": doc.created_at
+                })
+            except Document.DoesNotExist:
+                continue
+
+    return Response(related, status=status.HTTP_200_OK)
 
 
 

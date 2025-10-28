@@ -49,6 +49,28 @@ class Document(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.owner.username})"
+    
+
+class SemanticLink(models.Model):
+    SOURCE_TYPE_CHOICES = [
+        ("note", "Note"),
+        ("document", "Document"),
+    ]
+
+    source_type = models.CharField(max_length=20, choices=SOURCE_TYPE_CHOICES)
+    source_id = models.PositiveIntegerField()
+    target_type = models.CharField(max_length=20, choices=SOURCE_TYPE_CHOICES)
+    target_id = models.PositiveIntegerField()
+
+    similarity = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("source_type", "source_id", "target_type", "target_id")
+
+    def __str__(self):
+        return f"{self.source_type}({self.source_id}) → {self.target_type}({self.target_id}) [{self.similarity:.2f}]"
+
 
 
 
