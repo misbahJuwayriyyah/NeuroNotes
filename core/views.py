@@ -24,6 +24,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 
+from core.models import SemanticLink
+
 
 
 class NoteViewSet(viewsets.ModelViewSet):
@@ -106,29 +108,59 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrOwner]
     parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend]
 
-    def get_queryset(self):#type: ignore[override]
+    def get_queryset(self):  # type: ignore[override]
         user = self.request.user
         role = getattr(user, "role", None)
-        if role == "admin":
-            return Document.objects.all()
-        return Document.objects.filter(owner=user)
+        queryset = Document.objects.all() if role == "admin" else Document.objects.filter(owner=user)
+
+        # --- Query Params ---
+        search = self.request.query_params.get("search")  # type: ignore[override]
+        start_date = self.request.query_params.get("start")  # type: ignore[override]
+        end_date = self.request.query_params.get("end") # type: ignore[override]
+        sort = self.request.query_params.get("sort") # type: ignore[override]
+
+        # --- Search Filter ---
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(extracted_text__icontains=search)
+            )
+
+        # --- Date Filters ---
+        if start_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                queryset = queryset.filter(created_at__gte=start)
+            except ValueError:
+                pass
+
+        if end_date:
+            try:
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+                queryset = queryset.filter(created_at__lte=end)
+            except ValueError:
+                pass
+
+        # --- Sorting ---
+        if sort:
+            queryset = queryset.order_by(sort)
+        else:
+            queryset = queryset.order_by("-created_at")
+
+        return queryset
 
     def perform_create(self, serializer):
         document = serializer.save(owner=self.request.user)
 
-        # Extract text
+        # Extract text and generate embedding
         file_path = document.file.path
         extracted_text = extract_text_from_pdf(file_path)
         document.extracted_text = extracted_text
-
-        # Generate embedding
-        embedding = generate_embedding(extracted_text)
-        document.embedding = embedding
-
+        document.embedding = generate_embedding(extracted_text)
         document.save()
 
-from core.models import SemanticLink, Note, Document
 
 
 @api_view(["GET"])
