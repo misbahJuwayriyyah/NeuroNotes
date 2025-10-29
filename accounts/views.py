@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer, UserSerializer
 
 User = get_user_model()
 
@@ -38,6 +38,7 @@ class UserViewSet(viewsets.ModelViewSet):
     Allows admin to list, view, and delete users.
     """
     queryset = User.objects.all()
+    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     http_method_names = ["get", "delete"]  # restricts methods to safe ones
 

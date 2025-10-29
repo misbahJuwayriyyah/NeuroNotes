@@ -21,7 +21,7 @@ from neuronotes import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", include("core.urls")),
-    path("",views.home),
+    path("", include("frontend.urls")),
     path("api/auth/",include("accounts.urls")),
     path("api/assistant/", include("assistant.urls")),
 

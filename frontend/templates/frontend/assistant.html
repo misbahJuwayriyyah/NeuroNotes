@@ -1,0 +1,10 @@
+{% extends "frontend/base.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Ask NeuroNotes Assistant</h2>
+<form hx-post="/assistant/" hx-target="#response" hx-swap="innerHTML">
+  <input type="text" name="question" placeholder="Ask a question..." 
+         class="border p-2 w-1/2 rounded">
+  <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded">Ask</button>
+</form>
+<div id="response" class="mt-6"></div>
+{% endblock %}

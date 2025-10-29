@@ -1,0 +1,12 @@
+<div class="bg-white shadow p-4 rounded">
+  <h3 class="font-semibold mb-2">Response:</h3>
+  <p>{{ answer.answer }}</p>
+  <div class="mt-3 text-sm text-gray-500">
+    <strong>Sources:</strong>
+    <ul>
+      {% for src in answer.sources %}
+      <li>{{ src.title }} ({{ src.type }})</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

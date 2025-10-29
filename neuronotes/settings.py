@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'core',
     'accounts',
     "assistant",
+    "frontend",
 ]
 
 MIDDLEWARE = [

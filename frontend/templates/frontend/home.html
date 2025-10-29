@@ -1,0 +1,26 @@
+{% extends "frontend/base.html" %}
+{% block content %}
+<h2 class="text-2xl font-semibold mb-4">Your Notes</h2>
+<div class="grid grid-cols-2 gap-4">
+  {% for note in notes %}
+  <div class="bg-white shadow p-4 rounded">
+    <h3 class="font-bold text-lg">{{ note.title }}</h3>
+    <p class="text-sm text-gray-600">{{ note.content|truncatechars:120 }}</p>
+  </div>
+  {% empty %}
+  <p>No notes yet.</p>
+  {% endfor %}
+</div>
+
+<h2 class="text-2xl font-semibold mt-8 mb-4">Your Documents</h2>
+<div class="grid grid-cols-2 gap-4">
+  {% for doc in docs %}
+  <div class="bg-white shadow p-4 rounded">
+    <h3 class="font-bold text-lg">{{ doc.title }}</h3>
+    <a href="{{ doc.file.url }}" class="text-indigo-500">View File</a>
+  </div>
+  {% empty %}
+  <p>No documents yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
